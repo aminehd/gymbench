@@ -1,73 +1,91 @@
 # gymbench
 
-## The idea
+Train a policy and render it as a GIF in Gymnasium's docs format.
+CLI: `gymbench env-gif run`.
 
-Gymnasium's docs show a GIF for every environment — but they're recorded with a
-**random** agent, so the little cart-pole just flops over and the mountain car
-never climbs. [Issue #1610](https://github.com/Farama-Foundation/Gymnasium/issues/1610)
-asks for GIFs of **trained** agents instead, so the docs show each env actually
-being *solved*.
-
-`gymbench` does exactly that: point it at an environment, it trains a small policy
-(Stable-Baselines3), rolls it out, and saves a GIF in Gymnasium's exact docs
-format. The rendering is identical to Gymnasium's own generator — the only change
-is the agent picks actions with a trained policy instead of at random.
-
-It's built as a tiny framework, not a one-off script: environments are **data**
-(a config file), algorithms are **plugins** (one decorator), so the same tool
-scales from CartPole to any other env without touching the core.
-
-## Config
-
-Everything is driven by a TOML config — one `[[reel]]` per env:
-
-```toml
-[[reel]]
-env = "CartPole-v1"   # -> cart_pole.gif
-algo = "ppo"          # ppo | dqn | sac
-steps = 120_000
-```
-
-Configs live in [`configs/env_gif/`](configs/env_gif/). Add an env = add a `[[reel]]`;
-add a whole new group (Box2D, MuJoCo…) = add a new TOML. No code changes.
-
-## Run
+## Install
 
 ```bash
 pip install -e .
-gymbench env-gif run                              # all envs in the config
-gymbench env-gif run --env CartPole-v1 --algo ppo # one-off
-gymbench algos                                     # list algorithms
 ```
 
-## How it fits together
+## One config → its GIFs
+
+A config is a TOML file listing reels — one `[[reel]]` per env. Running the config
+trains a policy for each and renders its GIF:
+
+```toml
+# configs/env_gif/classic_control.toml
+[defaults]
+sink = "gymnasium"        # where GIFs are written
+group = "classic_control" # docs subfolder
+
+[[reel]]
+env = "CartPole-v1"       # -> cart_pole.gif
+algo = "ppo"              # ppo | dqn | sac
+steps = 120_000
+
+[[reel]]
+env = "MountainCar-v0"
+algo = "dqn"
+steps = 120_000
+hp = { learning_rate = 4e-3, gamma = 0.98 }   # optional per-reel hyperparams
+```
+
+```bash
+gymbench env-gif run              # runs the bundled classic_control config -> all its GIFs
+```
+
+## Generate for other envs
+
+Write another config and run it — no code changes.
+
+```toml
+# configs/env_gif/box2d.toml
+[defaults]
+group = "box2d"
+
+[[reel]]
+env = "LunarLander-v3"    # -> lunar_lander.gif
+algo = "dqn"
+steps = 500_000
+```
+
+```bash
+gymbench env-gif run configs/env_gif/box2d.toml   # by path
+gymbench env-gif run --config box2d                # or by name (configs/env_gif/box2d.toml)
+```
+
+## One-off from flags
+
+```bash
+gymbench env-gif run --env CartPole-v1 --algo ppo --steps 120000
+gymbench env-gif run --env CartPole-v1 --algo ppo --sink ./out   # render locally
+gymbench algos                                                    # list algorithms
+```
+
+## Flags
+
+| flag | meaning |
+|------|---------|
+| `config` (positional) | path to a TOML config |
+| `--config NAME` | bundled config by name (`configs/env_gif/NAME.toml`) |
+| `--env` / `--algo` | one-off mode instead of a config |
+| `--steps` | training timesteps |
+| `--sink` | `"gymnasium"` (docs tree) or an output folder |
+| `--group` | docs subfolder / env group |
+
+## Layout
 
 ```
-configs/env_gif/         config sets — WHAT to generate (mirrors tools/)
+configs/env_gif/     config sets (mirror tools/)
 src/gymbench/
-  core/
-    registry.py          @algo decorator — how new algorithms plug in
-    algos.py             built-in ppo / dqn / sac
-    trainer.py           train a policy            (env-agnostic)
-    render.py            policy -> GIF             (matches gen_gifs.py)
-    evaluate.py          greedy score              (trust the number, then the GIF)
-    sink.py              WHERE the GIF lands
-    config.py            TOML -> typed specs
-  tools/env_gif/         the tool — wires core together
-  cli.py                 gymbench env-gif run
+  core/              registry · trainer · render · sink · config
+  tools/env_gif/     the tool
+  cli.py             gymbench env-gif run
 ```
 
-The three ideas that make it a framework:
-
-- **Registry (`@algo`)** — algorithms self-register; add one with a 4-line factory
-  in `core/algos.py`. The core never changes.
-- **Declarative config** — one TOML = one reproducible batch. Env ids become
-  snake_case filenames automatically (`CartPole-v1` → `cart_pole.gif`).
-- **Sinks** — `"gymnasium"` writes into the fork's docs tree; any other value is a
-  plain output folder.
-
-The whole contribution in one line: same loop as Gymnasium's
-[`gen_gifs.py`](src/gymbench/core/render.py) — `reset → render → step` — with
-`action = model.predict(obs)` instead of `env.action_space.sample()`.
+New algorithm? Add a 4-line factory in `core/algos.py`. Env family with system
+deps? `pip install "gymnasium[box2d]"` (or `[mujoco]`).
 
 > CLI command is `env-gif`; the package folder is `env_gif` (imports can't have hyphens).
