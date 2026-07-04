@@ -1,0 +1,44 @@
+# Classic Control — trained-policy GIFs for the Gymnasium docs (issue #1610).
+# Each [[reel]] trains a policy and renders one GIF straight into the bundled
+# Gymnasium fork at external/Gymnasium/docs/_static/videos/classic_control/.
+#
+# Run:  gymbench gif run          (this file is the bundled default)
+
+[defaults]
+sink = "gymnasium"
+group = "classic_control"
+seed = 0
+
+[[reel]]
+env = "CartPole-v1"
+algo = "ppo"
+steps = 120_000
+# solved: mean greedy return ~500 / 500
+
+[[reel]]
+env = "Acrobot-v1"
+algo = "dqn"
+steps = 100_000
+# Tuned hp from rl-baselines3-zoo for a crisp swing-up.
+hp = { learning_rate = 6.3e-4, batch_size = 128, buffer_size = 50_000, learning_starts = 0, gamma = 0.99, target_update_interval = 250, train_freq = 4, gradient_steps = -1, exploration_fraction = 0.12, exploration_final_eps = 0.1, policy_kwargs = { net_arch = [256, 256] } }
+
+[[reel]]
+env = "MountainCar-v0"
+algo = "dqn"
+steps = 120_000
+# Sparse reward — won't solve on defaults. Tuned hp from rl-baselines3-zoo.
+# solved: mean greedy return > -110 (reaches the flag)
+hp = { learning_rate = 4e-3, batch_size = 128, buffer_size = 10_000, learning_starts = 1_000, gamma = 0.98, target_update_interval = 600, train_freq = 16, gradient_steps = 8, exploration_fraction = 0.2, exploration_final_eps = 0.07, policy_kwargs = { net_arch = [256, 256] } }
+
+[[reel]]
+env = "MountainCarContinuous-v0"
+algo = "sac"
+steps = 50_000
+# Sparse reward + control cost — default SAC learns to sit still. gSDE
+# exploration (use_sde) is the key. Tuned hp from rl-baselines3-zoo.
+hp = { learning_rate = 3e-4, buffer_size = 50_000, batch_size = 512, ent_coef = 0.1, train_freq = 32, gradient_steps = 32, gamma = 0.9999, tau = 0.01, learning_starts = 0, use_sde = true, policy_kwargs = { log_std_init = -3.67, net_arch = [64, 64] } }
+
+[[reel]]
+env = "Pendulum-v1"
+algo = "sac"
+steps = 20_000

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gymbench"
+version = "0.1.0"
+description = "A gym experiment toolkit — train policies and render them (first tool: docs-format GIFs)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "gymnasium[classic-control]",
+    "stable-baselines3",
+    "pillow",
+    "tomli; python_version < '3.11'",
+]
+
+[project.scripts]
+gymbench = "gymbench.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gymbench"]
