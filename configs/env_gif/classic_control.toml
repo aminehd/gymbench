@@ -14,11 +14,21 @@ env = "CartPole-v1"
 algo = "ppo"
 steps = 120_000
 # solved: mean greedy return ~500 / 500
+# A perfectly balanced pole barely moves, so it hides the dynamics. Start the
+# pole tilted (~0.2 rad) so the GIF opens with a visible recovery — the cart
+# darts under the falling pole and rights it. State = [x, x_dot, angle, ang_vel].
+start_state = [0.0, 0.0, 0.2, 0.0]
 
 [[reel]]
 env = "Acrobot-v1"
 algo = "dqn"
 steps = 100_000
+# Terminates the instant the tip reaches the line — linger on that success pose
+# so the swing-up reads as "stood up" instead of a 1-frame blip before reset.
+hold = 25
+# Lead the GIF from a start with a long (~135-step) swing-up — more of the
+# pump-up dynamics is visible than an efficient 65-step start.
+render_seed = 34
 # Tuned hp from rl-baselines3-zoo for a crisp swing-up.
 hp = { learning_rate = 6.3e-4, batch_size = 128, buffer_size = 50_000, learning_starts = 0, gamma = 0.99, target_update_interval = 250, train_freq = 4, gradient_steps = -1, exploration_fraction = 0.12, exploration_final_eps = 0.1, policy_kwargs = { net_arch = [256, 256] } }
 

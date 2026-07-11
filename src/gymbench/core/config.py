@@ -27,6 +27,9 @@ class Reel:
     group: str = "classic_control"
     sink: str = "gymnasium"
     hp: dict = field(default_factory=dict)
+    hold: int = 0  # extra frames to linger on the success pose (Acrobot/MountainCar)
+    render_seed: int | None = None  # start the GIF rollout from this seed (else seed+42)
+    start_state: list | None = None  # force the initial state (e.g. a tilted CartPole)
     name: str | None = None  # override filename stem; default derived from env
 
     @property

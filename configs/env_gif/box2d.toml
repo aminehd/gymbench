@@ -1,0 +1,34 @@
+# Box2D — trained-policy GIFs for the Gymnasium docs (issue #1610, batch 2).
+# Each [[reel]] trains a policy and renders one GIF straight into the bundled
+# Gymnasium fork at external/Gymnasium/docs/_static/videos/box2d/.
+#
+# Run:  gymbench env-gif run --config box2d
+#
+# CarRacing-v3 is deferred: its observation is a 96x96x3 image, so it needs a
+# CnnPolicy (the other envs use the default MlpPolicy). Follow-up batch.
+
+[defaults]
+sink = "gymnasium"
+group = "box2d"
+seed = 0
+
+[[reel]]
+env = "LunarLander-v3"
+algo = "dqn"
+steps = 400_000
+# Terminates when the lander comes to rest — linger on the touchdown pose so the
+# GIF reads as "landed on the pad" rather than cutting to a reset mid-descent.
+hold = 20
+# solved: mean greedy return > 200 (lands on the pad, both legs down)
+# Tuned hp from rl-baselines3-zoo (DQN, LunarLander).
+hp = { learning_rate = 6.3e-4, batch_size = 128, buffer_size = 50_000, learning_starts = 0, gamma = 0.99, target_update_interval = 250, train_freq = 4, gradient_steps = -1, exploration_fraction = 0.12, exploration_final_eps = 0.1, policy_kwargs = { net_arch = [256, 256] } }
+
+[[reel]]
+env = "BipedalWalker-v3"
+algo = "sac"
+steps = 500_000
+# Continuous gait — the episode runs well past 300 frames, so the GIF shows a
+# steady walk cycle (no terminal pose to hold).
+# solved: mean greedy return > 300 (walks to the far end without falling)
+# Tuned hp from rl-baselines3-zoo (SAC, BipedalWalker). gSDE for smooth control.
+hp = { learning_rate = 7.3e-4, buffer_size = 300_000, batch_size = 256, gamma = 0.98, tau = 0.02, train_freq = 64, gradient_steps = 64, learning_starts = 10_000, use_sde = true, policy_kwargs = { log_std_init = -3, net_arch = [400, 300] } }

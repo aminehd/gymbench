@@ -33,6 +33,8 @@ def make(reel: Reel) -> Path:
     print(f"[{reel.env}] mean greedy return (5 eps): {mean_return:.1f}")
 
     out = resolve_sink(reel.sink, reel.group, reel.filename)
-    render_gif(model, reel.env, out, seed=reel.seed + 42)
+    render_seed = reel.render_seed if reel.render_seed is not None else reel.seed + 42
+    render_gif(model, reel.env, out, seed=render_seed, hold_on_success=reel.hold,
+               start_state=reel.start_state)
     print(f"[{reel.env}] saved -> {out}")
     return out
