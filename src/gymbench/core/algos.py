@@ -10,22 +10,32 @@ from __future__ import annotations
 from .registry import algo
 
 
+def _split_policy(hp: dict, default: str = "MlpPolicy") -> tuple[str, dict]:
+    """Pop the ``policy`` name out of hp (default MlpPolicy) so image-based envs
+    can request ``CnnPolicy`` from the config without a code change."""
+    hp = dict(hp)
+    return hp.pop("policy", default), hp
+
+
 @algo("ppo")
 def _ppo(env_id: str, hp: dict, seed: int):
     from stable_baselines3 import PPO
 
-    return PPO("MlpPolicy", env_id, seed=seed, verbose=0, **hp)
+    policy, hp = _split_policy(hp)
+    return PPO(policy, env_id, seed=seed, verbose=0, **hp)
 
 
 @algo("dqn")
 def _dqn(env_id: str, hp: dict, seed: int):
     from stable_baselines3 import DQN
 
-    return DQN("MlpPolicy", env_id, seed=seed, verbose=0, **hp)
+    policy, hp = _split_policy(hp)
+    return DQN(policy, env_id, seed=seed, verbose=0, **hp)
 
 
 @algo("sac")
 def _sac(env_id: str, hp: dict, seed: int):
     from stable_baselines3 import SAC
 
-    return SAC("MlpPolicy", env_id, seed=seed, verbose=0, **hp)
+    policy, hp = _split_policy(hp)
+    return SAC(policy, env_id, seed=seed, verbose=0, **hp)

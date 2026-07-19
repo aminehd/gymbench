@@ -14,6 +14,8 @@ import gymnasium as gym
 import numpy as np
 from PIL import Image
 
+from .framestack import FrameStacker
+
 # Match docs/_scripts/gen_gifs.py exactly.
 LENGTH = 300
 
@@ -35,11 +37,12 @@ def _reset(env, start_state, seed=None):
 
 def render_gif(model, env_id: str, out_path: str | Path, seed: int = 42,
                hold_on_success: int = 0, start_state=None,
-               deterministic: bool = True) -> Path:
+               deterministic: bool = True, frame_stack: int = 0) -> Path:
     # .unwrapped drops the TimeLimit wrapper exactly as gen_gifs.py does, so a
     # policy that never terminates renders continuously (no mid-GIF reset).
     env = gym.make(env_id, render_mode="rgb_array").unwrapped
     obs = _reset(env, start_state, seed=seed)
+    stacker = FrameStacker(frame_stack, obs) if frame_stack else None
 
     # Mirror gen_gifs.py's loop (`while len(frames) <= LENGTH`, 301 frames); the
     # changed line is the action source. For envs that end on success (Acrobot,
@@ -50,13 +53,18 @@ def render_gif(model, env_id: str, out_path: str | Path, seed: int = 42,
         frames.append(Image.fromarray(env.render()))
 
         # The one line that differs from upstream: trained policy, not random.
-        action, _ = model.predict(obs, deterministic=deterministic)
+        pred_obs = stacker.observe() if stacker else obs
+        action, _ = model.predict(pred_obs, deterministic=deterministic)
         obs, _, terminated, truncated, _ = env.step(action)
+        if stacker:
+            stacker.push(obs)
         if terminated or truncated:
             if terminated and hold_on_success:
                 success_frame = Image.fromarray(env.render())  # the pose we just reached
                 frames.extend([success_frame] * hold_on_success)
             obs = _reset(env, start_state)
+            if stacker:
+                stacker.reset(obs)
     env.close()
 
     out = Path(out_path)

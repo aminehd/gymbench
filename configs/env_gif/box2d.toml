@@ -3,9 +3,6 @@
 # Gymnasium fork at external/Gymnasium/docs/_static/videos/box2d/.
 #
 # Run:  gymbench env-gif run --config box2d
-#
-# CarRacing-v3 is deferred: its observation is a 96x96x3 image, so it needs a
-# CnnPolicy (the other envs use the default MlpPolicy). Follow-up batch.
 
 [defaults]
 sink = "gymnasium"
@@ -32,3 +29,15 @@ steps = 500_000
 # solved: mean greedy return > 300 (walks to the far end without falling)
 # Tuned hp from rl-baselines3-zoo (SAC, BipedalWalker). gSDE for smooth control.
 hp = { learning_rate = 7.3e-4, buffer_size = 300_000, batch_size = 256, gamma = 0.98, tau = 0.02, train_freq = 64, gradient_steps = 64, learning_starts = 10_000, use_sde = true, policy_kwargs = { log_std_init = -3, net_arch = [400, 300] } }
+
+[[reel]]
+env = "CarRacing-v3"
+algo = "ppo"
+steps = 4_000_000
+# Pixel env (96x96x3), so it needs a CnnPolicy plus the two things the MLP envs
+# don't: several parallel envs and a stack of recent frames (so the CNN can see
+# motion). Full rl-baselines3-zoo PPO recipe — 8 envs + 2-frame stack + 4M steps.
+# solved-ish: mean greedy return ~429 (drives the track through straights/curves)
+n_envs = 8
+frame_stack = 2
+hp = { policy = "CnnPolicy", n_steps = 512, batch_size = 128, n_epochs = 10, learning_rate = 1e-4, gamma = 0.99, gae_lambda = 0.95, ent_coef = 0.0, sde_sample_freq = 4, max_grad_norm = 0.5, vf_coef = 0.5, clip_range = 0.2, use_sde = true, policy_kwargs = { log_std_init = -2, ortho_init = false } }

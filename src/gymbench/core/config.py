@@ -30,6 +30,8 @@ class Reel:
     hold: int = 0  # extra frames to linger on the success pose (Acrobot/MountainCar)
     render_seed: int | None = None  # start the GIF rollout from this seed (else seed+42)
     start_state: list | None = None  # force the initial state (e.g. a tilted CartPole)
+    n_envs: int = 1  # parallel training envs (PPO on image envs wants several)
+    frame_stack: int = 0  # stack N consecutive frames as the observation (CarRacing)
     name: str | None = None  # override filename stem; default derived from env
 
     @property
